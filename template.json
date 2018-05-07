@@ -43,7 +43,20 @@
       "metadata": {
         "description": "Subnet 2 Name"
       }
-    }
+    },
+    "natVirtualMachineSize": {
+       "type": "string",
+       "defaultValue": "Standard_DS2_v2",
+       "metadata": {
+          "description": "The size of the virtual machine used for the NAT box."
+       }
+     },
+    "jiraVirtualMachineSize": {
+        "type": "string",
+        "defaultValue": "Standard_DS3_v2",
+        "metadata": {
+          "description": "Jira VMs size"
+        }
   },
   "variables": {
      "apiVersion": "2015-06-15"
