@@ -1,6 +1,6 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
+"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+"contentVersion": "1.0.0.0",
 "parameters": {
     "vnetName": {
       "type": "string",
@@ -44,26 +44,75 @@
         "description": "Subnet 2 Name"
       }
     },
+    "subnet3Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.4.0/24",
+      "metadata": {
+        "description": "nat Prefix"
+      }
+    },
+    "subnet3Name": {
+      "type": "string",
+      "defaultValue": "nat",
+      "metadata": {
+        "description": "Subnet 3 Name"
+      }
+    },
     "natVirtualMachineSize": {
-       "type": "string",
-       "defaultValue": "Standard_DS2_v2",
-       "metadata": {
-          "description": "The size of the virtual machine used for the NAT box."
-       }
-     },
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "The size of the virtual machine used for the NAT box."
+      }
+    },
+    "natAdminUsername": {
+      "type": "string",
+      "defaultValue": "xdt",
+      "metadata": {
+          "description": "Default Admin username"
+      }
+    },
+    "natAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+          "description": "Default Admin password"
+      }
+    },
+    "jumpVirtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "The size of the virtual machine used for the jump server box."
+      }
+    },
     "jiraVirtualMachineSize": {
-        "type": "string",
-        "defaultValue": "Standard_DS3_v2",
-        "metadata": {
-          "description": "Jira VMs size"
-        }
-  },
-  "variables": {
-     "apiVersion": "2015-06-15"
-  },
-  "resources": [
+      "type": "string",
+      "defaultValue": "Standard_DS3_v2",
+      "metadata": {
+        "description": "Jira VMs size"
+      }
+    },
+    "appGatewaySize": {
+      "type": "string",
+      "allowedValues": [
+          "Standard_Small",
+          "Standard_Medium"
+      ],
+      "defaultValue": "Standard_Small",
+      "metadata": {
+          "description": "The application gateway size"
+      }
+    }
+},
+"variables": {
+    "azureApi": {
+      "network": "2017-06-01",
+      "vm": "2017-03-30"
+    }
+},
+"resources": [
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "[variables('azureApi').network]",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[parameters('vnetName')]",
       "location": "[resourceGroup().location]",
@@ -85,11 +134,35 @@
             "properties": {
               "addressPrefix": "[parameters('subnet2Prefix')]"
             }
+          },
+          {
+            "name": "[parameters('subnet3Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnet3Prefix')]"
+            }
           }
         ]
       }
+    },
+    {
+      "name": "[variables('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('nic1')]",
+        "[variables('nic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+            "computerName": "[variables('virtualMachineName')]",
+            "adminUsername": "[parameters('natAdminUsername')]",
+            "adminPassword": "[parameters('natAdminPassword')]"
+        }
+      }
     }
-  ],
-  "outputs": {
-  }
+],
+"outputs": {
+}
 }
