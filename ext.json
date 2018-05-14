@@ -1,0 +1,464 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+"parameters": {
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "sapjiratest",
+      "metadata": {
+        "description": "VNet name"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Address prefix"
+      }
+    },
+    "subnet1Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/24",
+      "metadata": {
+        "description": "Backend Prefix"
+      }
+    },
+    "subnet1Name": {
+      "type": "string",
+      "defaultValue": "Backend",
+      "metadata": {
+        "description": "Subnet for Backend"
+      }
+    },
+    "subnet2Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.3.0/24",
+      "metadata": {
+        "description": "Web Prefix"
+      }
+    },
+    "subnet2Name": {
+      "type": "string",
+      "defaultValue": "Web",
+      "metadata": {
+        "description": "Subnet 2 Name"
+      }
+    },
+    "subnet3Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.4.0/24",
+      "metadata": {
+        "description": "nat Prefix"
+      }
+    },
+    "subnet3Name": {
+      "type": "string",
+      "defaultValue": "nat",
+      "metadata": {
+        "description": "Subnet 3 Name"
+      }
+    },
+    "natVirtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "The size of the virtual machine used for the NAT box."
+      }
+    },
+    "natAdminUsername": {
+      "type": "string",
+      "defaultValue": "xdt",
+      "metadata": {
+          "description": "Default Admin username"
+      }
+    },
+    "natAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+          "description": "Default Admin password"
+      }
+    },
+    "jiraVirtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS3_v2",
+      "metadata": {
+        "description": "Jira VMs size"
+      }
+    },
+    "jumpVirtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "Jira VMs size"
+      }
+    },
+    "appGatewaySize": {
+      "type": "string",
+      "allowedValues": [
+          "Standard_Small",
+          "Standard_Medium"
+      ],
+      "defaultValue": "Standard_Small",
+      "metadata": {
+          "description": "The application gateway size"
+      }
+    }
+  },
+  "variables": {
+    "azureApi": {
+      "network": "2017-06-01",
+      "vm": "2017-03-30",
+      "appgw": "2016-06-01"
+    },
+    "names": {
+      "natVmName": "natjiratest",
+      "jumpVmName": "sapjiratestjump"
+    },
+    "nat": {
+      "vm": {
+        "size": "[parameters('natVirtualMachineSize')]"
+      }
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('azureApi').network]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('vnetName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('subnet1Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[parameters('subnet2Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnet2Prefix')]"
+            }
+          },
+          {
+            "name": "[parameters('subnet3Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnet3Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "[variables('azureApi').appgw]",
+      "name": "[variables('applicationGateway').name]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('jira').vnet.name)]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "[parameters('applicationGatewaySize')]",
+          "tier": "Standard",
+          "capacity": "[parameters('clusterSize')]"
+        },
+          "gatewayIPConfigurations": [
+            {
+              "name": "[concat(variables('namespace'), 'appgwipconfig')]",
+                "properties": {
+                  "subnet": {
+                    "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                  }
+                }
+            }
+          ],
+          "frontendIPConfigurations": [
+            {
+              "name": "[variables('applicationGateway').frontend.ipConfiguration.name]",
+                "properties": {
+                  "privateIPAddress": "[variables('applicationGateway').frontend.ipConfiguration.address]",
+                    "privateIPAllocationMethod": "Static",
+                    "subnet": {
+                      "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('jira').vnet.name), '/subnets/', variables('applicationGateway').frontend.subnet.name)]"
+                    }
+                }
+            }
+          ],
+          "frontendPorts": [
+            {
+              "name": "[variables('applicationGateway').frontend.portConfiguration.name]",
+                "properties": {
+                  "Port": "[variables('applicationGateway').frontend.portConfiguration.value]"
+                }
+            }
+          ],
+          "backendAddressPools": [
+            {
+              "name": "[variables('applicationGateway').backend.addressPool.name]"
+            }
+          ],
+          "backendHttpSettingsCollection": [
+            {
+              "name": "[variables('applicationGateway').backend.httpConfiguration.name]",
+                "properties": {
+                  "Port": "[variables('applicationGateway').backend.port]",
+                  "Protocol": "Http",
+                  "CookieBasedAffinity": "Enabled"
+                }
+            }
+          ],
+          "httpListeners": [
+              {
+                "name": "[variables('applicationGateway').frontend.httpListener.name]",
+                  "properties": {
+                      "FrontendIPConfiguration": {
+                          "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendIPConfigurations/', variables('applicationGateway').frontend.ipConfiguration.name)]"
+                      },
+                      "FrontendPort": {
+                          "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/frontendPorts/', variables('applicationGateway').frontend.portConfiguration.name)]"
+                      },
+                      "Protocol": "Http",
+                      "SslCertificate": null
+                  }
+              }
+          ],
+          "requestRoutingRules": [
+              {
+                  "Name": "[concat(variables('namespace'), 'appgwroutes')]",
+                  "properties": {
+                      "RuleType": "Basic",
+                      "httpListener": {
+                          "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/httpListeners/', variables('applicationGateway').frontend.httpListener.name)]"
+                      },
+                      "backendAddressPool": {
+                          "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendAddressPools/', variables('applicationGateway').backend.addressPool.name)]"
+                      },
+                      "backendHttpSettings": {
+                          "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('applicationGateway').name), '/backendHttpSettingsCollection/', variables('applicationGateway').backend.httpConfiguration.name)]"
+                      }
+                  }
+              }
+          ]
+      }
+    },
+    {
+      "name": "[variables('natVmName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('natnic1')]",
+        "[variables('natnic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),natVmName]",
+          "adminUsername": "[parameters('natAdminUsername')]",
+          "adminPassword": "[parameters('natAdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('nat').vm.size]"
+        },
+        "storageProfile": {
+          "imageReference": {
+              "publisher": "[variables('nat').vm.image.publisher]",
+              "offer": "[variables('nat').vm.image.offer]",
+              "sku": "[variables('nat').vm.image.sku]",
+              "version": "[variables('nat').vm.image.version]"
+          },
+          "osDisk": {
+              "name": "[variables('nat').vm.disk.name]",
+              "managedDisk": {
+                  "storageAccountType": "[variables('nat').vm.disk.type]"
+              },
+              "createOption": "FromImage"
+          }
+        }
+      }
+    },
+    {
+      "name": "[variables('natVirtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('natnic1')]",
+        "[variables('natnic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),natVmName]",
+          "adminUsername": "[parameters('natAdminUsername')]",
+          "adminPassword": "[parameters('natAdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('nat').vm.size]"
+        }
+      }
+    },
+    {
+      "name": "[variables('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('natnic1')]",
+        "[variables('natnic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),natVmName]",
+          "adminUsername": "[parameters('natAdminUsername')]",
+          "adminPassword": "[parameters('natAdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('nat').vm.size]"
+        },
+        "storageProfile": {
+          "imageReference": {
+              "publisher": "[variables('nat').vm.image.publisher]",
+              "offer": "[variables('nat').vm.image.offer]",
+              "sku": "[variables('nat').vm.image.sku]",
+              "version": "[variables('nat').vm.image.version]"
+          },
+          "osDisk": {
+              "name": "[variables('nat').vm.disk.name]",
+              "managedDisk": {
+                  "storageAccountType": "[variables('nat').vm.disk.type]"
+              },
+              "createOption": "FromImage"
+          }
+        }
+      }
+    },
+    {
+      "name": "[variables('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('natnic1')]",
+        "[variables('natnic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),natVmName]",
+          "adminUsername": "[parameters('natAdminUsername')]",
+          "adminPassword": "[parameters('natAdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('nat').vm.size]"
+        },
+        "storageProfile": {
+          "imageReference": {
+              "publisher": "[variables('nat').vm.image.publisher]",
+              "offer": "[variables('nat').vm.image.offer]",
+              "sku": "[variables('nat').vm.image.sku]",
+              "version": "[variables('nat').vm.image.version]"
+          },
+          "osDisk": {
+              "name": "[variables('nat').vm.disk.name]",
+              "managedDisk": {
+                  "storageAccountType": "[variables('nat').vm.disk.type]"
+              },
+              "createOption": "FromImage"
+          }
+        }
+      }
+    },
+    {
+      "name": "[variables('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('natnic1')]",
+        "[variables('natnic2')]",
+        "[variables('natStorageAccountName')]"
+      ],
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),natVmName]",
+          "adminUsername": "[parameters('natAdminUsername')]",
+          "adminPassword": "[parameters('natAdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('nat').vm.size]"
+        },
+        "storageProfile": {
+          "imageReference": {
+              "publisher": "[variables('nat').vm.image.publisher]",
+              "offer": "[variables('nat').vm.image.offer]",
+              "sku": "[variables('nat').vm.image.sku]",
+              "version": "[variables('nat').vm.image.version]"
+          },
+          "osDisk": {
+              "name": "[variables('nat').vm.disk.name]",
+              "managedDisk": {
+                  "storageAccountType": "[variables('nat').vm.disk.type]"
+              },
+              "createOption": "FromImage"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "[variables('azureApi').network]",
+      "name": "jumpnic",
+      "location": "[resourceGroup().location]",
+      "properties": {
+          "ipConfigurations": [
+              {
+                  "name": "azurezone2",
+                  "properties": {
+                      "privateIPAllocationMethod": "Static",
+                      "subnet": {
+                          "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', vnet-zone2-pmp, '/subnets/', subnet-zone2-pmp]"
+                      }
+                  }
+              }
+          ],
+          "enableIPForwarding": true
+      }
+    },
+    {
+      "name": "[variables('names'),jumpVmName]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "[variables('azureApi').vm]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('names'),jumpVmName]",
+          "adminUsername": "[parameters('jumpAdminUsername')]",
+          "adminPassword": "[parameters('jumpAdminPassword')]"
+          },
+        "hardwareProfile": {
+          "vmSize": "[parameters('jiraVirtualMachineSize')]"
+          },
+        "networkProfile": {
+          "networkInterfaces": [
+              {
+                  "id": "[resourceId('Microsoft.Network/networkInterfaces/', jumpnic)]",
+                  "properties": {
+                      "primary": true
+                  }
+              }
+            ]
+          }
+      }
+    }  
+  ],
+  "outputs": {
+  }
+}
