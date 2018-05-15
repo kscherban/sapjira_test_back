@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+"parameters": {
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "sapjiradc",
+      "metadata": {
+        "description": "VNet name"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Network Address prefix"
+      }
+    },
+    "subnets-array": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "subnetname": "sapjiratestscale",
+          "prefix": "10.0.4.0/24"
+        },
+        {
+          "subnetname": "sapjiratestback",
+          "prefix": "10.0.5.0/24"
+        },
+        {
+          "subnetname": "sapjiraqascale",
+          "prefix": "10.0.14.0/24"
+        }
+      ]
+    }
+  },
+  "variables": {
+    "azureApi": {
+      "network": "2017-06-01",
+      "vm": "2017-03-30"
+    },
+    "names": {
+      "vnet": "[parameters('vnetName')]",
+      "copy": [
+        {
+            "name": "subnets-array",
+            "count": 3,
+            "input": {
+                "name": "[copyIndex('subnets-array').subnetname]",
+                "addressPrefix": "[copyIndex('subnets-array').prefix]"
+            }
+        }
+      ]
+    },
+    "AddressPrefix": "[parameters('vnetAddressPrefix')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('azureApi').network]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('names').vnet]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('AddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnets-array')]",
+            "properties": {
+              "addressPrefix": "[variables('subnets-array')]"
+            }
+          }
+        ]
+      }
+    }  
+  ],
+  "outputs": {
+  }
+}

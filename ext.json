@@ -72,6 +72,13 @@
           "description": "Default Admin username"
       }
     },
+    "jumpAdminUsername": {
+      "type": "string",
+      "defaultValue": "jiraadmin",
+      "metadata": {
+          "description": "Default Admin username"
+      }
+    },
     "natAdminPassword": {
       "type": "securestring",
       "metadata": {
@@ -106,9 +113,9 @@
   },
   "variables": {
     "azureApi": {
-      "network": "2017-06-01",
-      "vm": "2017-03-30",
-      "appgw": "2016-06-01"
+      "network": 2017-06-01,
+      "vm": 2017-03-30,
+      "appgw": 2016-06-01
     },
     "names": {
       "natVmName": "natjiratest",
