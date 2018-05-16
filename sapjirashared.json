@@ -30,6 +30,10 @@
         {
           "subnetname": "qascale",
           "prefix": "10.0.14.0/24"
+        },
+        {
+          "subnetname": "qaback",
+          "prefix": "10.0.15.0/24"
         }
       ]
     }
