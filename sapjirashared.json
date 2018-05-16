@@ -60,10 +60,10 @@
           "name": "subnets",
           "count": "[length(parameters('subnets-array'))]",
           "input": {
-            "name": "[concat('sapjira', 'parameters('subnets-array')[copyIndex(subnets)].subnetname' )]",
-              "properties": {
-                "addressPrefix": "[concat('sapjira', 'parameters('subnets-array')[copyIndex(subnets)].prefix')]"
-              }
+            "name": "[concat ('sapjira', parameters('subnets-array')[copyIndex('subnets')].subnetname)]",
+            "properties": {
+              "addressPrefix": "[parameters('subnets-array')[copyIndex('subnets')].prefix]"
+            }
             }
         }]
       }
