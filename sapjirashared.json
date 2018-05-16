@@ -58,8 +58,6 @@
         },
         "copy": [{
           "name": "subnets",
-          "mode": "Serial",
-          "batchSize": 1,
           "count": "[length(parameters('subnets-array'))]",
           "input": {
             "name": "[concat('sapjira', parameters('subnets-array')[copyIndex()].subnetname)]",
