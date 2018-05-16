@@ -11,7 +11,7 @@
     },
     "vnetAddressPrefix": {
       "type": "string",
-      "defaultValue": "10.0.0.0/16",
+      "defaultValue": "10.1.0.0/16",
       "metadata": {
         "description": "Network Address prefix"
       }
@@ -20,20 +20,28 @@
       "type": "array",
       "defaultValue": [
         {
+          "subnetname": "prodscale",
+          "prefix": "10.1.1.0/24"
+        },
+        {
+          "subnetname": "prodback",
+          "prefix": "10.1.2.0/24"
+        },
+        {
           "subnetname": "testscale",
-          "prefix": "10.0.4.0/24"
+          "prefix": "10.1.11.0/24"
         },
         {
           "subnetname": "testback",
-          "prefix": "10.0.5.0/24"
+          "prefix": "10.1.12.0/24"
         },
         {
           "subnetname": "qascale",
-          "prefix": "10.0.14.0/24"
+          "prefix": "10.1.21.0/24"
         },
         {
           "subnetname": "qaback",
-          "prefix": "10.0.15.0/24"
+          "prefix": "10.1.22.0/24"
         }
       ]
     }
