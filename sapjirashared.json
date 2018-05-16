@@ -61,15 +61,15 @@
             "name": "[concat('sapjira', parameters('subnets-array')[copyIndex()].subnetname)]",
             "properties": {
               "addressPrefix": "[concat('sapjira', parameters('subnets-array')[copyIndex()].prefix)]"
+            },
+            "copy": {
+              "name": "subnets",
+              "mode": "Serial",
+              "batchSize": 1,
+              "count": "[length(parameters('subnets-array'))]"
             }
           }
         ]
-      },
-      "copy": {
-        "name": "subnets",
-        "mode": "Serial",
-        "batchSize": 1,
-        "count": "[length(parameters('subnets-array'))]"
       }
     }  
   ],
