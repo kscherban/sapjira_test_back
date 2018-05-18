@@ -23,6 +23,14 @@
             2
         ]
       },
+      "storagecount": {
+        "type": "int",
+        "defaultValue": 1,
+        "allowedValues": [
+          1,
+          2
+      ]
+    },
       "jumpcount": {
         "type": "int",
         "defaultValue": 2,
@@ -30,6 +38,22 @@
           2,
           3
       ]
+    },
+    "VmSize": {
+        "type": "string",
+        "defaultValue": "Standard_A0",
+        "allowedValues": [
+          "Standard_A0",
+          "Standard_A1"
+        ]
+    },
+    "jumpboxSshUser": {
+        "type": "string",
+        "defaultValue": "jiraadmin"
+    },
+    "jumpboxSshKey": {
+        "type": "string",
+        "defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA9CgRrAvu0f8YtV71yn1NnvkKdYah0gfprB8k9QXG1P7Yn5jX4DQZdG12d5ZnfzlYsLh0uSfBj2Ih+gs4fngkbDXsYFKNGVdHYZHHJX1xfkGaLUt57yV/M9VqHj8DeTsMUa0bDORsEZDzxvHD3FgoDqB1nz+2Cx6S54Bqe9tdihPn1CElq+7EOQvWNjHbw9lpqFJElbsD96RGhiTCDNanBChvI3D+95hJ9XM9EFUm+DlZMfXgEUCo4pqnTpmTaL7f1qTPHUkWWSKTsX/KI4KRnKa8cYU92nYPhIwZDLywsY3s670wpUgElo1ERI9JjEofixyirsqwzxUza4n1aMpRdw=="
     }
   },
   "variables": {
@@ -39,7 +63,8 @@
       "storageacc": "2016-01-01"
     },
     "jc": "[parameters('jumpcount')]",
-    "nicc": "[mul(parameters('ifacecount'), parameters('ifacecount'))]",
+    "nicc": "[mul(variables('jc'), parameters('ifacecount'))]",
+    "sc": "[parameters('storagecount')]",
     "ids": {
         "rg-network": "/subscriptions/4f2a8a58-fafe-4f8a-9a7c-bc7fb9da01ac/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-zone2-pmp"
     },
@@ -47,7 +72,22 @@
         "test",
         "qa",
         "prod"
-    ]
+    ],
+    "vm": {
+        "size": "[parameters('VmSize')]",
+        "user": "[parameters('jumpboxSshUser')]",
+        "key": "[parameters('jumpboxSshKey')]",
+        "image": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "16.04-LTS",
+            "version": "latest"
+        },
+        "disk": {
+            "name": "os_disk",
+            "type": "Standard_LRS"
+        }
+    }
   },
   "resources": [
     {
@@ -62,9 +102,7 @@
         "properties": {},
         "copy": {
             "name": "storagecopy",
-            "count": "[variables('jc')]",
-            "mode": "Serial",
-            "batchSize": 2
+            "count": "[variables('sc')]"
         }
     },
     {
@@ -91,7 +129,65 @@
             "mode": "Serial",
             "batchSize": 1
         }
-      }
+      },
+      {
+        "type": "Microsoft.Compute/virtualMachines",
+        "apiVersion": "[variables('azureApi').vm]",
+        "name": "[concat('jump', copyIndex('vmcopy'), uniqueString(resourceGroup().id))]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+            "[concat('Microsoft.Network/networkInterfaces/', concat('nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)))]"
+        ],
+        "properties": {
+            "hardwareProfile": {
+                "vmSize": "[variables('vm').size]"
+            },
+            "osProfile": {
+                "computerName": "[concat('jump', copyIndex('vmcopy'), uniqueString(resourceGroup().id))]",
+                "adminUsername": "[variables('vm').user]",
+                "linuxConfiguration": {
+                    "disablePasswordAuthentication": true,
+                    "ssh": {
+                        "publicKeys": [
+                            {
+                                "path": "[concat('/home/', variables('vm').user, '/.ssh/authorized_keys')]",
+                                "keyData": "[variables('vm').key]"
+                            }
+                        ]
+                    }
+                }
+            },
+            "storageProfile": {
+                "imageReference": {
+                    "publisher": "[variables('vm').image.publisher]",
+                    "offer": "[variables('vm').image.offer]",
+                    "sku": "[variables('vm').image.sku]",
+                    "version": "[variables('vm').image.version]"
+                },
+                "osDisk": {
+                    "name": "[concat(variables('vm').disk.name, copyIndex('vmcopy'))]",
+                    "managedDisk": {
+                        "storageAccountType": "[variables('vm').disk.type]"
+                    },
+                    "createOption": "FromImage"
+                }
+            },
+            "networkProfile": {
+                "networkInterfaces": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces/', concat('nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)) )]",
+                        "properties": {
+                            "primary": false
+                        }
+                    }
+                ]
+            }
+        },
+        "copy": {
+            "name": "vmcopy",
+            "count": "[variables('jc')]"
+        }
+    }
   ],
   "outputs": {
   }
