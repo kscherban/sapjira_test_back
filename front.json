@@ -1,0 +1,98 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+      "landscape": {
+          "type": "string",
+          "defaultValue": "test",
+          "allowedValues": [
+              "test",
+              "qa",
+              "dev",
+              "prod"
+          ],
+          "metadata": {
+            "description": "landscape name or tier name"
+          }
+      },
+      "ifacecount": {
+          "type": "int",
+          "defaultValue": 1,
+          "allowedValues": [
+            1,
+            2
+        ]
+      },
+      "jumpcount": {
+        "type": "int",
+        "defaultValue": 2,
+        "allowedValues": [
+          2,
+          3
+      ]
+    }
+  },
+  "variables": {
+    "azureApi": {
+      "network": "2017-06-01",
+      "vm": "2017-03-30",
+      "storageacc": "2016-01-01"
+    },
+    "jc": "[parameters('jumpcount')]",
+    "nicc": "[mul(parameters('ifacecount'), parameters('ifacecount'))]",
+    "ids": {
+        "rg-network": "/subscriptions/4f2a8a58-fafe-4f8a-9a7c-bc7fb9da01ac/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-zone2-pmp"
+    },
+    "tiersarray": [
+        "test",
+        "qa",
+        "prod"
+    ]
+  },
+  "resources": [
+    {
+        "apiVersion": "[variables('azureApi').storageacc]",
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[concat('storage', copyIndex('storagecopy'),uniqueString(resourceGroup().id))]",
+        "location": "[resourceGroup().location]",
+        "sku": {
+            "name": "Premium_LRS"
+        },
+        "kind": "Storage",
+        "properties": {},
+        "copy": {
+            "name": "storagecopy",
+            "count": "[variables('jc')]",
+            "mode": "Serial",
+            "batchSize": 2
+        }
+    },
+    {
+        "type": "Microsoft.Network/networkInterfaces",
+        "apiVersion": "[variables('azureApi').network]",
+        "name": "[concat('nic', copyIndex('niccopy'), uniqueString(resourceGroup().id))]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "[concat('ipconfig', copyIndex('niccopy'))]",
+              "properties": {
+                "subnet": {                    
+                  "id": "[concat(resourceId('sapjira_shared','Microsoft.Network/virtualNetworks', 'sapjiradc'), '/subnets/', concat('sapjira', parameters('landscape'), 'scale') )]"
+                },
+                "privateIPAllocationMethod": "Dynamic"
+              }
+            }
+          ]
+        },
+        "copy": {
+            "name": "niccopy",
+            "count": "[variables('nicc')]",
+            "mode": "Serial",
+            "batchSize": 1
+        }
+      }
+  ],
+  "outputs": {
+  }
+}
