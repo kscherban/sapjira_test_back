@@ -1,0 +1,33 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "landscape": {
+            "value": "test"
+        },
+        "ip-pool": {
+          "value": [
+              "10.79.81.41",
+              "10.79.81.42"
+          ]
+      },
+        "ifacecount": {
+            "value": 1
+        },
+        "storagecount": {
+          "value": 1
+      },
+        "jumpcount": {
+          "value": 1
+        },
+      "VmSize": {
+          "value": "Standard_A0"
+      },
+      "jumpboxSshUser": {
+          "value": "jiraadmin"
+      },
+      "jumpboxSshKey": {
+          "value": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA9CgRrAvu0f8YtV71yn1NnvkKdYah0gfprB8k9QXG1P7Yn5jX4DQZdG12d5ZnfzlYsLh0uSfBj2Ih+gs4fngkbDXsYFKNGVdHYZHHJX1xfkGaLUt57yV/M9VqHj8DeTsMUa0bDORsEZDzxvHD3FgoDqB1nz+2Cx6S54Bqe9tdihPn1CElq+7EOQvWNjHbw9lpqFJElbsD96RGhiTCDNanBChvI3D+95hJ9XM9EFUm+DlZMfXgEUCo4pqnTpmTaL7f1qTPHUkWWSKTsX/KI4KRnKa8cYU92nYPhIwZDLywsY3s670wpUgElo1ERI9JjEofixyirsqwzxUza4n1aMpRdw=="
+      }
+  }
+}

@@ -15,6 +15,25 @@
             "description": "landscape name or tier name"
           }
       },
+      "ip-pool": {
+        "type": "array",
+        "defaultValue": [
+            "10.79.81.41"
+        ],
+        "allowedValues": [
+            "10.79.81.41",
+            "10.79.81.42",
+            "10.79.81.43",
+            "10.79.81.44",
+            "10.79.81.45",
+            "10.79.81.46",
+            "10.79.81.7",
+            "10.79.81.13"
+        ],
+        "metadata": {
+          "description": "landscape name or tier name"
+        }
+    },
       "ifacecount": {
           "type": "int",
           "defaultValue": 1,
@@ -35,6 +54,7 @@
         "type": "int",
         "defaultValue": 2,
         "allowedValues": [
+          1,
           2,
           3
       ]
@@ -108,7 +128,7 @@
     {
         "type": "Microsoft.Network/networkInterfaces",
         "apiVersion": "[variables('azureApi').network]",
-        "name": "[concat('nic', copyIndex('niccopy'), uniqueString(resourceGroup().id))]",
+        "name": "[concat('vm', copyIndex('niccopy'),'nic', copyIndex('niccopy'), uniqueString(resourceGroup().id))]",
         "location": "[resourceGroup().location]",
         "properties": {
           "ipConfigurations": [
@@ -116,9 +136,10 @@
               "name": "[concat('ipconfig', copyIndex('niccopy'))]",
               "properties": {
                 "subnet": {                    
-                  "id": "[concat(resourceId('sapjira_shared','Microsoft.Network/virtualNetworks', 'sapjiradc'), '/subnets/', concat('sapjira', parameters('landscape'), 'scale') )]"
+                 "id": "[concat(resourceId('rg-network','Microsoft.Network/virtualNetworks', 'vnet-zone2-pmp'), '/subnets/', 'subnet-zone2-pmp')]"
                 },
-                "privateIPAllocationMethod": "Dynamic"
+                "privateIPAllocationMethod": "Static",
+                "privateIPAddress": "[parameters('ip-pool')[copyIndex('niccopy')]]"
               }
             }
           ]
@@ -133,10 +154,10 @@
       {
         "type": "Microsoft.Compute/virtualMachines",
         "apiVersion": "[variables('azureApi').vm]",
-        "name": "[concat('jump', copyIndex('vmcopy'), uniqueString(resourceGroup().id))]",
+        "name": "[concat('jump', copyIndex('vmcopy'), 'vm', uniqueString(resourceGroup().id))]",
         "location": "[resourceGroup().location]",
         "dependsOn": [
-            "[concat('Microsoft.Network/networkInterfaces/', concat('nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)))]"
+            "[concat('Microsoft.Network/networkInterfaces/', concat('vm', copyIndex('vmcopy'), 'nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)))]"
         ],
         "properties": {
             "hardwareProfile": {
@@ -190,5 +211,9 @@
     }
   ],
   "outputs": {
+      "checkAddresses": {
+          "type": "bool",
+          "value": "[greaterOrEquals(length(parameters('ip-pool')), variables('nicc'))]"
+      }
   }
 }
