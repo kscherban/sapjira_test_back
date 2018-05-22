@@ -20,7 +20,7 @@
       "type": "array",
       "defaultValue": [
         {
-          "subnetname": "prodgate",
+          "subnetname": "prodgw",
           "prefix": "10.1.1.0/24"
         },
         {
@@ -28,7 +28,7 @@
           "prefix": "10.1.2.0/24"
         },
         {
-          "subnetname": "testsgate",
+          "subnetname": "testsgw",
           "prefix": "10.1.11.0/24"
         },
         {
@@ -36,7 +36,7 @@
           "prefix": "10.1.12.0/24"
         },
         {
-          "subnetname": "qagate",
+          "subnetname": "qagw",
           "prefix": "10.1.21.0/24"
         },
         {
