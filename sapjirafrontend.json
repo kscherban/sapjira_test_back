@@ -224,14 +224,16 @@
                 }
             },
             "networkProfile": {
-                "networkInterfaces": [
-                    {
-                        "id": "[resourceId('Microsoft.Network/networkInterfaces/', concat('vm', copyIndex('vmcopy'), 'nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)) )]",
-                        "properties": {
-                            "primary": false
-                        }
+                "copy": [{
+                    "name": "networkInterfaces",
+                    "count": "[variables('ifc')]",
+                    "input": {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces/', concat('vm', copyIndex('vmcopy'), 'nic', copyIndex('networkInterfaces'), uniqueString(resourceGroup().id)) )]",
+                      "properties": {
+                        "primary": "false"
+                      }
                     }
-                ]
+                }]
             }
         },
         "copy": {
