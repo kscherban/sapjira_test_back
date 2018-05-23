@@ -55,8 +55,7 @@
         "defaultValue": 2,
         "allowedValues": [
           1,
-          2,
-          3
+          2
       ]
     },
     "VmSize": {
@@ -83,6 +82,7 @@
       "storageacc": "2016-01-01"
     },
     "jc": "[parameters('jumpcount')]",
+    "ifc": "[parameters('ifacecount')]",
     "nicc": "[mul(variables('jc'), parameters('ifacecount'))]",
     "sc": "[parameters('storagecount')]",
     "ids": {
@@ -128,29 +128,58 @@
     {
         "type": "Microsoft.Network/networkInterfaces",
         "apiVersion": "[variables('azureApi').network]",
-        "name": "[concat('vm', copyIndex('niccopy'),'nic', copyIndex('niccopy'), uniqueString(resourceGroup().id))]",
+        "name": "[concat('vm0nic', copyIndex('ifccopy'), uniqueString(resourceGroup().id))]",
         "condition": "[greaterOrEquals(length(parameters('ip-pool')), variables('nicc'))]",
         "location": "[resourceGroup().location]",
         "properties": {
           "ipConfigurations": [
             {
-              "name": "[concat('ipconfig', copyIndex('niccopy'))]",
+              "name": "[concat('ipconfig', copyIndex('ifccopy'))]",
               "properties": {
                 "subnet": {                    
                  "id": "[concat(resourceId('rg-network','Microsoft.Network/virtualNetworks', 'vnet-zone2-pmp'), '/subnets/', 'subnet-zone2-pmp')]"
                 },
                 "privateIPAllocationMethod": "Static",
-                "privateIPAddress": "[parameters('ip-pool')[copyIndex('niccopy')]]"
+                "privateIPAddress": "[parameters('ip-pool')[copyIndex('ifccopy')]]"
               }
             }
           ]
         },
         "copy": {
-            "name": "niccopy",
-            "count": "[variables('nicc')]",
+            "name": "ifccopy",
+            "count": "[variables('ifc')]",
             "mode": "Serial",
             "batchSize": 1
-        }
+        },
+        "comments": "deploying network ifcaes for vm0"
+      },
+      {
+        "type": "Microsoft.Network/networkInterfaces",
+        "apiVersion": "[variables('azureApi').network]",
+        "name": "[concat('vm1nic', copyIndex('ifccopy1'), uniqueString(resourceGroup().id))]",
+        "condition": "[if(equals(variables('jc'), 2), bool('true'), bool('false'))]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "[concat('ipconfig', copyIndex('ifccopy1'))]",
+              "properties": {
+                "subnet": {                    
+                 "id": "[concat(resourceId('rg-network','Microsoft.Network/virtualNetworks', 'vnet-zone2-pmp'), '/subnets/', 'subnet-zone2-pmp')]"
+                },
+                "privateIPAllocationMethod": "Static",
+                "privateIPAddress": "[parameters('ip-pool')[copyIndex('ifccopy1')]]"
+              }
+            }
+          ]
+        },
+        "copy": {
+            "name": "ifccopy1",
+            "count": "[variables('ifc')]",
+            "mode": "Serial",
+            "batchSize": 1
+        },
+        "comments": "deploying network ifcaes for vm1 only of more then 1 jump required and set in params"
       },
       {
         "type": "Microsoft.Compute/virtualMachines",
