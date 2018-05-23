@@ -129,6 +129,7 @@
         "type": "Microsoft.Network/networkInterfaces",
         "apiVersion": "[variables('azureApi').network]",
         "name": "[concat('vm', copyIndex('niccopy'),'nic', copyIndex('niccopy'), uniqueString(resourceGroup().id))]",
+        "condition": "[greaterOrEquals(length(parameters('ip-pool')), variables('nicc'))]",
         "location": "[resourceGroup().location]",
         "properties": {
           "ipConfigurations": [
