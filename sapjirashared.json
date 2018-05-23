@@ -74,9 +74,20 @@
           "input": {
             "name": "[concat ('sapjira', parameters('subnets-array')[copyIndex('subnets')].subnetname)]",
             "properties": {
-              "addressPrefix": "[parameters('subnets-array')[copyIndex('subnets')].prefix]"
+              "addressPrefix": "[parameters('subnets-array')[copyIndex('subnets')].prefix]",
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.Storage"
+                },
+                {
+                  "service": "Microsoft.Sql",
+                  "locations": [
+                      "[resourceGroup().location]"
+                  ]
+                }
+              ]           
             }
-            }
+          }
         }]
       }
     }  
