@@ -151,7 +151,7 @@
             "mode": "Serial",
             "batchSize": 1
         },
-        "comments": "deploying network ifcaes for vm0"
+        "comments": "deploying network ifaces for vm0"
       },
       {
         "type": "Microsoft.Network/networkInterfaces",
@@ -186,9 +186,6 @@
         "apiVersion": "[variables('azureApi').vm]",
         "name": "[concat('jump', copyIndex('vmcopy'), 'vm', uniqueString(resourceGroup().id))]",
         "location": "[resourceGroup().location]",
-        "dependsOn": [
-            "[concat('Microsoft.Network/networkInterfaces/', concat('vm', copyIndex('vmcopy'), 'nic', copyIndex('vmcopy'), uniqueString(resourceGroup().id)))]"
-        ],
         "properties": {
             "hardwareProfile": {
                 "vmSize": "[variables('vm').size]"
@@ -216,7 +213,7 @@
                     "version": "[variables('vm').image.version]"
                 },
                 "osDisk": {
-                    "name": "[concat(variables('vm').disk.name, copyIndex('vmcopy'))]",
+                    "name": "[concat('vm', copyIndex('vmcopy'), variables('vm').disk.name, copyIndex('vmcopy'))]",
                     "managedDisk": {
                         "storageAccountType": "[variables('vm').disk.type]"
                     },
